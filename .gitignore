@@ -5,3 +5,7 @@ __pycache__/
 config.yaml
 store.yaml
 store.bak.yaml
+
+#vim
+*.swp
+*.swo
