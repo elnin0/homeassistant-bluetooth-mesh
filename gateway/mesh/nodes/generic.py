@@ -43,7 +43,6 @@ class Generic(Node):
         Use the helper functions to retrieve information.
         """
         client = self._app.elements[0][models.ConfigClient]
-<<<<<<< HEAD
         data = await client.get_composition_data([self.unicast], net_index=0, timeout=30)
         logging.info(f"Fetch composition: {data}")
         # TODO: multi page composition data support
