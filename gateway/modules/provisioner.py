@@ -191,7 +191,7 @@ class ProvisionerModule(Module):
                 net_index=0,
                 app_key_index=self.app.app_keys[0][0],
                 net_key_index=self.app.app_keys[0][1],
-                app_key=self.app.app_keys[0][2],
+                app_key=self.app.app_keys[0][2]
             )
 
         # update friend state

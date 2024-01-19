@@ -1,10 +1,15 @@
 """Mesh Nodes Generic"""
 import logging
+import asyncio
 
 from bluetooth_mesh import models
 from mesh import Node
-from mesh.composition import Composition
+from mesh.composition import Composition, Element
 
+
+def on_message(source, destination, app_index, message):
+    timestamp = datetime.now().strftime("%Y-%m-%d %T.%f")
+    print(f"{timestamp} {source:04x} -> {destination:04x}: {message!r}")
 
 class Generic(Node):
     """
@@ -38,6 +43,7 @@ class Generic(Node):
         Use the helper functions to retrieve information.
         """
         client = self._app.elements[0][models.ConfigClient]
+<<<<<<< HEAD
         data = await client.get_composition_data([self.unicast], net_index=0, timeout=30)
         logging.info(f"Fetch composition: {data}")
         # TODO: multi page composition data support

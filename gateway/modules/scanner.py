@@ -36,6 +36,7 @@ class ScannerModule(Module):
     async def handle_cli(self, args):
         await self.scan()
         # print user friendly results
+<<<<<<< HEAD
         logging.info(f"Found {len(self._unprovisioned)} nodes:")
         for uuid in self._unprovisioned:
             logging.info(f"UUID => {uuid}")

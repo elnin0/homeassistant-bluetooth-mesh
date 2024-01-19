@@ -4,6 +4,10 @@ import asyncio
 import logging
 import os
 import secrets
+import argparse
+import uuid
+import os
+
 from contextlib import AsyncExitStack, suppress
 
 from bluetooth_mesh import models
@@ -162,12 +166,14 @@ class MqttGateway(Application):
         await client.bind(self.app_keys[0][0])
 
     async def _try_bind_node(self, node):
-        try:
-            await node.bind(self)
-            logging.info(f"Bound node {node}")
-            node.ready.set()
-        except Exception as exp:  # pylint: disable=broad-except
-            logging.exception(f"Failed to bind node {node}: {exp}")
+        while not node.ready.is_set():
+            try:
+                await node.bind(self)
+                logging.info(f"Bound node {node}")
+                node.ready.set()
+            except:
+                logging.exception(f"Failed to bind node {node}. Retry in 1 minute.")
+                await asyncio.sleep(60)
 
     def scan_result(self, rssi, data, options):
         MESH_MODULES["scan"]._scan_result(rssi, data, options)
@@ -189,8 +195,13 @@ class MqttGateway(Application):
             tasks = await stack.enter_async_context(Tasks())
 
             # connect to daemon
+            self.token_ring.token = self._store.get("token")
             await stack.enter_async_context(self)
             await self.connect()
+
+            # immediately store token after connect
+            self._store.set("token", self.token_ring.token)
+            self._store.persist()
 
             # leave network
             if args.leave:
@@ -225,6 +236,7 @@ class MqttGateway(Application):
             # initialize all nodes
             for node in self._nodes.all():
                 tasks.spawn(self._try_bind_node(node), f"bind {node}")
+                tasks.spawn(node.refresh(), f"periodically refresh {node}")
 
             # start MQTT task
             tasks.spawn(self._messenger.run(self), "run messenger")
@@ -237,7 +249,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--leave", action="store_true")
     parser.add_argument("--reload", action="store_true")
-    parser.add_argument("--basedir", default="..")
+    parser.add_argument("--basedir", default=os.getenv("GATEWAY_BASEDIR",".."))
 
     # module specific CLI interfaces
     subparsers = parser.add_subparsers()

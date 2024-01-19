@@ -6,6 +6,7 @@ from mesh.nodes.light import (
     BLE_MESH_MIN_MIRED,
     Light,
 )
+from sre_constants import BIGCHARSET
 from mqtt.bridge import HassMqttBridge
 
 
@@ -48,6 +49,7 @@ class GenericLightBridge(HassMqttBridge):
             "object_id": node.config.require("id"),
             "command_topic": "~/set",
             "state_topic": "~/state",
+            "availability_topic": "~/availability",
             "schema": "json",
         }
 
@@ -78,6 +80,7 @@ class GenericLightBridge(HassMqttBridge):
         message = {"state": "ON" if onoff else "OFF"}
 
         if onoff and node.supports(Light.BrightnessProperty):
+<<<<<<< HEAD
             message["brightness"] = (
                 int(node.retained(Light.BrightnessProperty, BLE_MESH_MAX_LIGHTNESS)) / self.brightness_max * 100
             )
@@ -111,3 +114,6 @@ class GenericLightBridge(HassMqttBridge):
 
     async def _notify_brightness(self, node, brightness):
         await self._state(node, brightness > 0)
+
+    async def _notify_availability(self, node, state):
+        await self._messenger.publish(self.component, node, "availability", state)

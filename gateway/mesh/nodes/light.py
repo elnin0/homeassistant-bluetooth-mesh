@@ -1,7 +1,9 @@
 """Mesh Nodes Light"""
+import asyncio
 import logging
 
 from bluetooth_mesh import models
+from bluetooth_mesh.messages import LightLightnessOpcode
 
 from .generic import Generic
 
@@ -47,6 +49,21 @@ class Light(Generic):
             await self.set_onoff_unack(True)
         else:
             await self.set_onoff(True)
+
+    async def refresh(self):
+        await self.ready.wait()
+        while True:
+            await self.get_availability()
+            await asyncio.sleep(60)
+
+    def lightness_cb(self, source: int,
+            net_index: int,
+            destination,
+            message):
+        if (self.unicast == source):
+            self.notify("availability", "online")
+            self.notify(Light.BrightnessProperty, message["light_lightness_status"]["present_lightness"])
+
 
     async def turn_off(self, ack=False):
         if not ack:
@@ -110,6 +127,10 @@ class Light(Generic):
             await self.get_ctl()
             await self.get_light_temperature_range()
 
+        client = self._app.elements[0][models.LightLightnessClient]
+        client.app_message_callbacks[LightLightnessOpcode.LIGHT_LIGHTNESS_STATUS] \
+            .add(self.lightness_cb)
+
     async def set_onoff_unack(self, onoff, **kwargs):
         self.notify(Light.OnOffProperty, onoff)
         client = self._app.elements[0][models.GenericOnOffClient]
@@ -119,6 +140,17 @@ class Light(Generic):
         self.notify(Light.OnOffProperty, onoff)
         client = self._app.elements[0][models.GenericOnOffClient]
         await client.set_onoff(self.unicast, self._app.app_keys[0][0], onoff, **kwargs)
+
+    async def get_availability(self):
+        client = self._app.elements[0][models.GenericOnOffClient]
+        state = await client.get_light_status([self.unicast], self._app.app_keys[0][0])
+
+        result = state[self.unicast]
+        if result is None:
+            logging.warn(f"Received invalid result {state}")
+            self.notify("availability", "offline")
+        elif not isinstance(result, BaseException):
+            self.notify("availability", "online")
 
     async def get_onoff(self):
         client = self._app.elements[0][models.GenericOnOffClient]

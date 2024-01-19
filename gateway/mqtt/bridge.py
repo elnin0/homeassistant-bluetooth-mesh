@@ -62,6 +62,7 @@ class HassMqttBridge:
                     logging.warning(f"Missing handler for command {command}: {exp}")
                     continue
 
+                payload = json.loads(message.payload.decode())
                 await handler(node, payload)
                 sleep(0.01)
 
